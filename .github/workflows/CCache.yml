@@ -4157,6 +4157,16 @@ jobs:
           echo "🐢 Fallback : ${FALLBACK_TIME}s"
 
       # ==============================
+      # Save Compiler Cache 
+      # ==============================
+      - name: 🔧 Save Compiler Cache
+        if: ${{ env.BUILDCCACHE != 'Disabled' }}
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}-${{ github.run_id }}
+
+      # ==============================
       # Compiler Cache Release
       # ==============================
       - name: 🔧 Compiler Cache Release
@@ -4169,26 +4179,23 @@ jobs:
             exit 1
           fi
 
-          # Define Tarball Name
-          CCACHE_TAR="CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst"
-          
-          # Create a Compressed Tarball of Compiler Cache Directory
+          # Define Tarball Name based on Cache Directory
+          CCACHE_TAR="${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst"
+
+          # Create the tarball (Zstandard compression) from the cache directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
-          tar -I zstd -cvf $CCACHE_TAR -C $CCACHE_DIR .
-        
-          # Ensure Target Directory Exists
-          mkdir -p $GITHUB_WORKSPACE/CCache
+          tar -I zstd -cvf $CCACHE_TAR -C ${{ env.CCACHE_DIR }} .
 
           # Display the Size of the Generated Tarball
           du -sh $CCACHE_TAR
           echo "🎉 Compiler Cache Release Created Successfully: $CCACHE_TAR"
 
-          # Move the Tarball to a Suitable Location
-          mv $CCACHE_TAR $GITHUB_WORKSPACE/CCache/
+          # Move the tarball to the same cache directory or target folder
+          mv $CCACHE_TAR ${{ env.CCACHE_DIR }}/
 
-          # Verify that the Tarball is Moved Correctly
-          echo "Verifying that the Tarball is in the Target Directory..."
-          ls -la $GITHUB_WORKSPACE/CCache/
+          # Verify that the Tarball is in the Cache Directory
+          echo "Verifying that the Tarball is in the Cache Directory..."
+          ls -la ${{ env.CCACHE_DIR }}/
 
       # ==============================
       # Create AnyKernel3
@@ -5024,9 +5031,9 @@ jobs:
       - name: 🔧 Upload Compiler Cache
         uses: actions/upload-artifact@v6
         with:        
-          name: Compiler-Cache-${{ env.FILE_BASE }}.tar.gz
-          path: "$GITHUB_WORKSPACE/CCache/*.tar.zst"
-          
+          name: Compiler-Cache-${{ env.FILE_BASE }}
+          path: ${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst
+ 
       # ==============================
       # Post Build Disk Check
       # ==============================
