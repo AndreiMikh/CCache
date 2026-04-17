@@ -4170,12 +4170,12 @@ jobs:
           fi
 
           # Define Tarball Name
-          CCACHE_TAR="CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.gz"
+          CCACHE_TAR="CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst"
           
           # Create a Compressed Tarball of Compiler Cache Directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
-          tar -czf $CCACHE_TAR -C $CCACHE_DIR .
-
+          tar -I zstd -cvf $CCACHE_TAR -C $CCACHE_DIR .
+        
           # Ensure Target Directory Exists
           mkdir -p $GITHUB_WORKSPACE/CCache
 
@@ -5025,7 +5025,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:        
           name: Compiler-Cache-${{ env.FILE_BASE }}.tar.gz
-          path: "$GITHUB_WORKSPACE/CCache/*.tar.gz"
+          path: "$GITHUB_WORKSPACE/CCache/*.tar.zst"
           
       # ==============================
       # Post Build Disk Check
