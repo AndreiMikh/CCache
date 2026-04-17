@@ -4174,7 +4174,7 @@ jobs:
           set -euo pipefail
           
           # Ensure Compiler Cache Directory Exists
-          if [ ! -d "$CCACHE_DIR" ]; then
+          if [ ! -d "${{ env.CCACHE_DIR }}" ]; then
             echo "⚠️ Compiler Cache Directory Does Not Exist!"
             exit 1
           fi
