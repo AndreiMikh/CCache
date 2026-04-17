@@ -4164,7 +4164,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}-${{ github.run_id }}
+          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}
 
       # ==============================
       # Compiler Cache Release
@@ -4180,12 +4180,12 @@ jobs:
           fi
 
           # Define Tarball Name based on Cache Directory
-          CCACHE_TAR="${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst"
-
+          CCACHE_TAR="${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}.tar.zst"
+          
           # Create the tarball (Zstandard compression) from the cache directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
-          tar -I zstd -cvf $CCACHE_TAR -C ${{ env.CCACHE_DIR }} --ignore-failed-read .
-          
+          tar -I zstd -cf $CCACHE_TAR -C ${{ env.CCACHE_DIR }} --ignore-failed-read $(find ${{ env.CCACHE_DIR }} -name "*${{ env.FILE_BASE }}*")
+         
           # Display the Size of the Generated Tarball
           du -sh $CCACHE_TAR
           echo "🎉 Compiler Cache Release Created Successfully: $CCACHE_TAR"
@@ -5032,8 +5032,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:        
           name: Compiler-Cache-${{ env.FILE_BASE }}
-          path: ${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.zst
- 
+          path: ${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}.tar.zst
+   
       # ==============================
       # Post Build Disk Check
       # ==============================
