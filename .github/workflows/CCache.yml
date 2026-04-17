@@ -4163,18 +4163,21 @@ jobs:
         run: |
           set -euo pipefail
           
-          # Ensure the Compiler Cache Directory Exists
+          # Ensure Compiler Cache Directory Exists
           if [ ! -d "$CCACHE_DIR" ]; then
             echo "⚠️ Compiler Cache Directory Does Not Exist!"
             exit 1
           fi
 
-          # Define the Tarball Name with a Timestamp
+          # Define Tarball Name
           CCACHE_TAR="CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.gz"
           
           # Create a Compressed Tarball of Compiler Cache Directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
           tar -czf $CCACHE_TAR -C $CCACHE_DIR .
+
+          # Ensure Target Directory Exists
+          mkdir -p $GITHUB_WORKSPACE/CCache
 
           # Display the Size of the Generated Tarball
           du -sh $CCACHE_TAR
@@ -4183,68 +4186,6 @@ jobs:
           # Move the Tarball to a Suitable Location
           mv $CCACHE_TAR $GITHUB_WORKSPACE/CCache/
 
-      # ==============================
-      # Save Compiler Cache 
-      # ==============================
-      - name: 🔧 Save Compiler Cache
-        if: ${{ env.BUILDCCACHE != 'Disabled' }}
-        uses: actions/cache@v5
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}-${{ github.run_id }}
-
-      # ==============================
-      # Cleanup Old Compiler Cache
-      # ==============================
-      - name: 🔧 Cleanup Old Compiler Cache
-        if: ${{ env.BUILDCCACHE != 'Disabled' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "--------------------------------------"
-          echo "🚀 Cleaning Old Compiler Cache..."
-          echo "--------------------------------------"
-          echo ""
-
-          if ! command -v ccache >/dev/null 2>&1; then
-            echo "⚠️ Compiler Cache Not Found, Skipping Cleanup..."
-            exit 0
-          fi
-
-          echo "📂 Cache Directory: $CCACHE_DIR"
-
-          # Show Statistic Before Cleanup Process
-          echo ""
-          echo "📊 Statistics Before Cleanup:"
-          ccache -s || true
-
-          # Ensure Max Size (Keep Consistent with Github Environment Set to ➡️ 20GB)
-          ccache -M "${CCACHE_MAXSIZE:-20G}"
-
-          # Remove Compiler Cache Entries Older than 7 Days (Safe Default)
-          echo ""
-          echo "🗑️ Removing Files Older than 5 Days..."
-          find "$CCACHE_DIR" -type f -mtime +5 -delete || true
-
-          # Clean + Recompress Compiler Cache
-          echo ""
-          echo "♻️ Running Compiler Cache Cleanup..."
-          ccache -c || true
-
-          # Optional: Prune Aggressively if Cache > Limit
-          echo ""
-          echo "📉 Enforcing Compiler Cache Size Limit..."
-          ccache -F 0 || true
-
-          # Show Statistics After Cleanup
-          echo ""
-          echo "📊 Statistics After Cleanup:"
-          ccache -s || true
-
-          echo ""
-          echo "🎉 Compiler Cache Cleanup Completed"
-    
       # ==============================
       # Create AnyKernel3
       # ==============================
@@ -5090,51 +5031,6 @@ jobs:
           echo ""
           echo "📊 Post-build Disk Usage Report..."
           df -h
-
-      # ==============================
-      # Compiler Cache Performance Summary
-      # ==============================
-      - name: 🔧 Compiler Cache Performance Summary
-        if: ${{ env.BUILDCCACHE != 'Disabled' }}
-        shell: bash
-        run: |
-          STATS="$(ccache -s)"
-          
-          echo "--------------------------------------"
-          echo "-------- Compiler Cache Stats --------"
-          echo "$STATS"
-          echo "--------------------------------------"
-
-          # Extract Values 
-          TOTAL=$(echo "$STATS" | grep -i "^Cacheable calls:" | sed 's/.*: *//' || true)
-          HITS=$(echo "$STATS" | grep -i "^ *Hits:" | head -n1 | sed 's/.*: *//' || true)
-          HIT_DIRECT=$(echo "$STATS" | grep -i "^ *Direct:" | sed 's/.*: *//' || true)
-          HIT_PRE=$(echo "$STATS" | grep -i "^ *Preprocessed:" | sed 's/.*: *//' || true)
-          MISS=$(echo "$STATS" | grep -i "^ *Misses:" | head -n1 | sed 's/.*: *//' || true)
-          SIZE=$(echo "$STATS" | grep -i "Cache size" | sed 's/.*: *//' || true)
-          RATE=$(echo "$STATS" | grep -i "^ *Hits:" | head -n1 | awk -F'[()]' '{print $2}' || true)
-        
-          # Fallback Defaults
-          HIT_DIRECT=${HIT_DIRECT:-0}
-          HIT_PRE=${HIT_PRE:-0}
-          MISS=${MISS:-0}
-          TOTAL=${TOTAL:-0}
-          RATE=${RATE:-0%}
-          SIZE=${SIZE:-0}
-
-          # Generate Summary Table
-          {
-            echo "### ⚡ Compiler Cache Performance Summary"
-            echo ""
-            echo "| Metric Description                                              | Reported Value |"
-            echo "|-----------------------------------------------------------------|----------------|"
-            echo "| Total Number of Compilation Requests Processed by the Compiler  | $TOTAL |"
-            echo "| Direct Cache Hits (Immediate Object Reuse Without Reprocessing) | $HIT_DIRECT |"
-            echo "| Preprocessed Cache Hits (Reused After Full Preprocessing Match) | $HIT_PRE |"
-            echo "| Cache Misses (Files That Required Complete Recompilation)       | $MISS |"
-            echo "| Overall Cache Hit Rate Across All Compilation Requests          | $RATE |"
-            echo "| Current Compiler Cache Storage Utilization on Disk              | $SIZE |"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       # ==============================
       # Kernel Build Details in Actions UI
