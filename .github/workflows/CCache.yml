@@ -4184,8 +4184,8 @@ jobs:
 
           # Create the tarball (Zstandard compression) from the cache directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
-          tar -I zstd -cvf $CCACHE_TAR -C ${{ env.CCACHE_DIR }}
-
+          tar -I zstd -cvf $CCACHE_TAR -C ${{ env.CCACHE_DIR }} --ignore-failed-read .
+          
           # Display the Size of the Generated Tarball
           du -sh $CCACHE_TAR
           echo "🎉 Compiler Cache Release Created Successfully: $CCACHE_TAR"
