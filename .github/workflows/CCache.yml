@@ -4185,11 +4185,17 @@ jobs:
           # Create the tarball (Zstandard compression) from the cache directory
           echo "Creating Compiler Cache Release Tarball: $CCACHE_TAR"
           tar -I zstd -cf $CCACHE_TAR -C ${{ env.CCACHE_DIR }} --ignore-failed-read $(find ${{ env.CCACHE_DIR }} -name "*${{ env.FILE_BASE }}*")
-         
+        
           # Display the Size of the Generated Tarball
           du -sh $CCACHE_TAR
           echo "🎉 Compiler Cache Release Created Successfully: $CCACHE_TAR"
 
+          # Delete the existing tarball if it exists and overwrite it
+          if [ -f "$CCACHE_TAR" ]; then
+            echo "⚠️ Tarball already exists. Deleting the existing tarball..."
+            rm -f "$CCACHE_TAR"
+          fi  
+          
           # Move the tarball to the same cache directory or target folder
           mv $CCACHE_TAR ${{ env.CCACHE_DIR }}/
 
