@@ -4179,6 +4179,11 @@ jobs:
             exit 1
           fi
 
+          if [ -z "$(ls -A ${{ env.CCACHE_DIR }})" ]; then
+            echo "⚠️ Cache Directory is empty! No files to compress."
+            exit 0  # Exit gracefully if no files to compress
+          fi  
+          
           # Define Tarball Name based on Cache Directory
           CCACHE_TAR="${{ env.CCACHE_DIR }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}.tar.zst"
           
