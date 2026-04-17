@@ -5024,9 +5024,10 @@ jobs:
       - name: 🔧 Upload Compiler Cache
         uses: actions/upload-artifact@v6
         with:
+        
           name: Compiler-Cache-${{ env.FILE_BASE }}
-          path: $GITHUB_WORKSPACE/CCache/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ github.ref_name }}.tar.gz
-    
+          path: CCache/*.tar.gz
+          
       # ==============================
       # Post Build Disk Check
       # ==============================
