@@ -293,12 +293,12 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      CCACHE_DIR: ${{ github.workspace }}/CCache
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_COMPILERCHECK: none
       CCACHE_NOHASHDIR: "true"
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_HARDLINK: "true"
-      CCACHE_MAXSIZE: 20G        # Balance Limit Cache to Prevent Disk Exhaustion       
+      CCACHE_MAXSIZE: 10G        # Balance Limit Cache to Prevent Disk Exhaustion       
   
     steps:    
       # ==============================
@@ -859,7 +859,7 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
 
-          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}-${{ github.run_id }}
+          key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}
 
           restore-keys: |
             CCache-${{ runner.os }}-${{ env.CPU }}-${{ env.KERNELVERSION }}-${{ github.ref_name }}
@@ -868,7 +868,7 @@ jobs:
             CCache-${{ runner.os }}-
   
       # ==============================
-      # Configure and Setup Compiler Cache
+      # Condigure and Setup Compiler Cache
       # ==============================
       - name: 🔧 Configure and Setup Compiler Cache
         if: ${{ env.BUILDCCACHE != 'Disabled' }}
@@ -896,7 +896,7 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           
           # Set Cache Size 
-          ccache -M "${CCACHE_MAXSIZE:-20G}"
+          ccache -M "${CCACHE_MAXSIZE:-10G}"
 
           # Core Optimizations 
           ccache --set-config=base_dir="$GITHUB_WORKSPACE"
@@ -3944,9 +3944,9 @@ jobs:
           # Setup: Enables Compiler Caching to Speed Up Re-Builds
           # Compresses Cache to Save Disk Space
           export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
-          export CCACHE_COMPRESS=true
-          export CCACHE_COMPRESSLEVEL=6
-          ccache -M 5G || echo "⚠️ Compiler Cache Not Available"
+          export CCACHE_COMPRESS=false
+          export CCACHE_COMPRESSLEVEL=1
+          ccache -M 10G || echo "⚠️ Compiler Cache Not Available"
           
           if [[ "${ENABLE_RUST:-false}" == "true" ]]; then
             echo "🦀 Setting up Rust Environment..."
@@ -4166,10 +4166,10 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}
 
-      - name: Package the current ccache into an archive file
+      - name: Package the Current Cacche into an Archive File
         if: always() # Attempt to package the cache whether the build succeeds or fails
         run: |
-          echo "Compressing the ccache directory using zstd..."
+          echo "Compressing the Cache Directory Using ZSTD..."
           cd ${{ env.CCACHE_DIR }}
           tar -I zstd -cf ${{ github.workspace }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}.tar.zst .
 
