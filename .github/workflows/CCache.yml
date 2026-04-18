@@ -904,7 +904,7 @@ jobs:
           ccache --set-config=compiler_check=content
 
           # Performance Boost
-          ccache --set-config=compression=true
+          ccache --set-config=compression=false
           ccache --set-config=direct_mode=true
 
           # Improve Hit Rate (Safe Looseness)
