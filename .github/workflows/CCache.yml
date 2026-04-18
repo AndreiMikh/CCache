@@ -3944,8 +3944,7 @@ jobs:
           # Setup: Enables Compiler Caching to Speed Up Re-Builds
           # Compresses Cache to Save Disk Space
           export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
-          export CCACHE_COMPRESS=false
-          export CCACHE_COMPRESSLEVEL=1
+          export CCACHE_NOCOMPRESS=true
           ccache -M 10G || echo "⚠️ Compiler Cache Not Available"
           
           if [[ "${ENABLE_RUST:-false}" == "true" ]]; then
