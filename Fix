@@ -1,0 +1,155 @@
+# ==============================
+# Initialize and Sync Repository (CACHED)
+# ==============================
+
+- name: ♻️ Restore Repo Cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      kernel_workspace/.repo/project-objects
+      kernel_workspace/.repo/projects
+      kernel_workspace/.repo/manifests.git
+    key: repo-${{ github.event.inputs.FILE }}-${{ github.ref_name }}
+    restore-keys: |
+      repo-${{ github.event.inputs.FILE }}-
+
+- name: 🔧 Initialize and Sync Repository
+  env:
+    FILE: ${{ github.event.inputs.FILE }}
+  run: |
+    set -euo pipefail
+
+    echo "------------------------------"
+    echo "🚀 Preparing Workspace..."
+    echo "------------------------------"
+    echo ""
+
+    # ==============================
+    # Git Performance Tweaks
+    # ==============================
+    echo "⚙️ Applying Git Performance Tweaks..."
+    git config --global fetch.parallel 4
+    git config --global http.postBuffer 524288000
+    git config --global core.compression 0
+    git config --global protocol.version 2
+
+    WORKDIR="kernel_workspace"
+    mkdir -p "$WORKDIR"
+    cd "$WORKDIR"
+
+    # ==============================
+    # Inject fallback manifest
+    # ==============================
+    mkdir -p .repo/manifests
+    cp "$GITHUB_WORKSPACE/.repo/manifests_fallback/${FILE}.xml" ".repo/manifests/${FILE}.xml"
+
+    MANIFESTBASE="https://github.com/${MANIFESTREPO}/${MANIFESTREPONAME}.git"
+
+    echo "🚀 Initializing Repository..."
+
+    # ⚠️ IMPORTANT: no --depth=1 (breaks caching)
+    repo init -u "$MANIFESTBASE" -b "$MANIFESTBRANCH" -m "${FILE}.xml" \
+      --no-clone-bundle \
+      --no-tags
+
+    echo "📃 Repo List:"
+    repo list || true
+
+    # ==============================
+    # Sync configuration
+    # ==============================
+    echo "📁 Syncing Repository..."
+
+    SYNC_FLAGS="-c --force-sync --no-clone-bundle --no-tags \
+    --optimized-fetch --prune --retry-fetches=3 --verbose \
+    -j4"
+
+    echo "⚡ Using controlled parallelism (4 jobs)"
+
+    (
+      while true; do
+        echo "⏳ Still Syncing... $(date)"
+        sleep 60
+      done
+    ) &
+    PROGRESS_PID=$!
+
+    # ==============================
+    # Multi-attempt sync (CLO-safe)
+    # ==============================
+    set +e
+    timeout 25m repo sync $SYNC_FLAGS
+    STATUS=$?
+
+    if [[ $STATUS -ne 0 ]]; then
+      echo "⚠️ First sync failed, retrying..."
+      repo sync $SYNC_FLAGS
+      STATUS=$?
+    fi
+
+    if [[ $STATUS -ne 0 ]]; then
+      echo "⚠️ Second sync failed, fallback to low parallel..."
+      repo sync -c -j1
+      STATUS=$?
+    fi
+
+    set -e
+
+    kill $PROGRESS_PID >/dev/null 2>&1 || true
+    wait $PROGRESS_PID 2>/dev/null || true
+
+    if [[ $STATUS -ne 0 ]]; then
+      echo "❌ Repository Sync Failed"
+      exit 1
+    fi
+
+    # ==============================
+    # Detect kernel repo
+    # ==============================
+    echo "🔎 Detecting Kernel Repository..."
+
+    KERNEL_REPOS_PATH=$(find . -type f -name "build.config*" \
+      -not -path "*/.repo/*" \
+      -print -quit)
+
+    if [[ -z "$KERNEL_REPOS_PATH" ]]; then
+      echo "⚠️ ERROR: No Build Configuration Found"
+      exit 1
+    fi
+
+    echo "📌 Build Configuration Found: $KERNEL_REPOS_PATH"
+
+    KERNEL_REPOS=$(dirname "${KERNEL_REPOS_PATH#./}")
+
+    echo "🔎 Detected Kernel Repository: $KERNEL_REPOS"
+    echo "KERNEL_REPOS=$KERNEL_REPOS" >> $GITHUB_ENV
+
+    # ==============================
+    # Cleanup ABI exports
+    # ==============================
+    echo "🧹 Cleaning ABI Protected Exports..."
+
+    for dir in kernel_platform/common kernel_platform/msm-kernel; do
+      [[ -d "$dir" ]] || continue
+
+      file="$dir/BUILD.bazel"
+
+      if [[ -f "$file" ]]; then
+        grep -q "protected_exports_list" "$file" && \
+          sed -i '/protected_exports_list/d' "$file"
+      fi
+
+      rm -f "$dir/android/abi_gki_protected_exports_"* || true
+    done
+
+    echo ""
+    echo "🎉 Repository Sync Complete"
+
+- name: 💾 Save Repo Cache
+  uses: actions/cache@v4
+  with:
+    path: |
+      kernel_workspace/.repo/project-objects
+      kernel_workspace/.repo/projects
+      kernel_workspace/.repo/manifests.git
+    key: repo-${{ github.event.inputs.FILE }}-${{ github.ref_name }}
