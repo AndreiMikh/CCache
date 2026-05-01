@@ -703,7 +703,7 @@ jobs:
           fi
 
           # Output Combined Value
-          echo "value=${MANIFESTBASEFILE}_Android${VANDROID:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "value=${MANIFESTBASEFILE}-${VANDROID:-unknown}" >> "$GITHUB_OUTPUT"
 
           echo ""
           echo "🎉 Manifest Parsing Complete"
