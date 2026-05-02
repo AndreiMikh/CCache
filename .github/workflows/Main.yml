@@ -921,7 +921,7 @@ jobs:
       # ==============================
       - name: 🔧 Release Cache Restoration
         id: cache-restoration
-        if: ${{ env.BUILDCCACHE != 'Disabled' && steps.ccache-restore.outputs.cache-hit != 'true' }}
+        if: ${{ env.BUILDCCACHE != 'Disabled' }}
         run: |
           set -e
 
@@ -1003,9 +1003,6 @@ jobs:
           # Core Performance Tuning
           # Cache Size
           ccache -M "${CCACHE_MAXSIZE}"
-      
-          # Compression
-          ccache -o compression=true
           
           echo ""
           echo "📊 Compiler Cache Statistics (Before Build):"
@@ -5855,7 +5852,7 @@ jobs:
       - name: 🔧 Upload Compiler Cache
         uses: actions/upload-artifact@v6
         with:        
-          name: Compiler-Cache-${{ env.FILE_BASE }}
+          name: Compiler-Cache-${{ env.MANIFESTBASEFILE }}
           path: ${{ github.workspace }}/CCache-${{ runner.os }}-${{ env.FILE_BASE }}-${{ env.CPUD }}-${{ github.ref_name }}.tar.zst
    
       # ==============================
