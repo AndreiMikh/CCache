@@ -10,6 +10,7 @@ on:
         default: 'CCache'
         options:
           - CCache
+          - ☘️ Main
           
       cache_mode:
         type: choice
