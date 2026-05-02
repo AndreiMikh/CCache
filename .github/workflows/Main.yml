@@ -4528,7 +4528,8 @@ jobs:
           export CCACHE_COMPILERCHECK="${{ env.CCACHE_COMPILERCHECK }}" || echo "⚠️ Compiler Check Not Found"
           export CCACHE_BASEDIR="${{ env.CCACHE_BASEDIR }}" || echo "⚠️ Base Directory Not Found"
           export CCACHE_NOHASHDIR="${{ env.CCACHE_NOHASHDIR }}" || echo "⚠️ NoHash Directory Not Found"
-          export CCACHE_NOHARDLINK="${{ env.CCACHE_NOHARDLINK }}" || echo "⚠️ Cache Hardlink Not Found"    
+          export CCACHE_NOHARDLINK="${{ env.CCACHE_NOHARDLINK }}" || echo "⚠️ Cache Hardlink Not Found"  
+          export CCACHE_NOCOMPRESS=true
                                                                                                       
           # Kernel Sloppiness
           CCACHECONF="${CCACHE_DIR}/ccache.conf"
